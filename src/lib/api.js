@@ -1,4 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL; // Railway backend URL
+const API_URL = import.meta.env.VITE_API_BASE; // Railway backend URL
+
 
 // =====================
 // User Profile
