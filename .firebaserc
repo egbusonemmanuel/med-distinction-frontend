@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "med-learn-bb7eb",
+    "Get-Content firebase.json -Raw": "med-learn-bb7eb"
+  },
+  "targets": {},
+  "etags": {}
+}
