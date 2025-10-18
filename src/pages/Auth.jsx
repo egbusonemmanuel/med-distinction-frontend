@@ -103,12 +103,18 @@ export default function AuthPage() {
       setMessage({ open: true, text: error.message, severity: "error" });
     } else {
       setMessage({ open: true, text: "Login successful!", severity: "success" });
+      window.location.href = "/dashboard"; // optional redirect after login
     }
   };
 
   const handleGoogleLogin = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({ provider: "google" });
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin, // ✅ auto-detects your current domain
+      },
+    });
     setLoading(false);
     if (error) {
       setMessage({ open: true, text: error.message, severity: "error" });
