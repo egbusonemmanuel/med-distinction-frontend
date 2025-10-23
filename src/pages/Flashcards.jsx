@@ -34,6 +34,8 @@ export default function FlashcardsStudy() {
   const [error, setError] = useState(null);
   const [mode, setMode] = useState("light");
 
+  const API_BASE = import.meta.env.VITE_API_URL; // ✅ use env var
+
   const lightColors = ["#fff59d", "#ffccbc", "#c8e6c9", "#bbdefb", "#f8bbd0"];
   const darkColors = ["#bdb76b", "#bc8f8f", "#6b8e23", "#4682b4", "#8b668b"];
 
@@ -55,16 +57,17 @@ export default function FlashcardsStudy() {
     const fetchCards = async () => {
       try {
         setLoading(true);
-        const res = await axios.get("http://localhost:4000/api/flashcards");
-        setCards(res.data); // backend sends raw array
-      } catch {
+        const res = await axios.get(`${API_BASE}/flashcards`);
+        setCards(res.data);
+      } catch (err) {
+        console.error(err);
         setError("Failed to load flashcards.");
       } finally {
         setLoading(false);
       }
     };
     fetchCards();
-  }, []);
+  }, [API_BASE]);
 
   const handleNewCardChange = (e) => {
     const { name, value } = e.target;
@@ -81,16 +84,17 @@ export default function FlashcardsStudy() {
       setSaving(true);
       const palette = mode === "light" ? lightColors : darkColors;
 
-      const res = await axios.post("http://localhost:4000/api/flashcards", {
+      const res = await axios.post(`${API_BASE}/flashcards`, {
         ...newCard,
         color: palette[cards.length % palette.length],
       });
 
-      const addedCard = res.data; // raw flashcard object
+      const addedCard = res.data;
       setCards((prev) => [addedCard, ...prev]);
       setNewCard({ front: "", back: "", topic: "" });
       setError(null);
-    } catch {
+    } catch (err) {
+      console.error(err);
       setError("Failed to add flashcard.");
     } finally {
       setSaving(false);
@@ -100,14 +104,15 @@ export default function FlashcardsStudy() {
   // Delete flashcard
   const deleteCard = async (id) => {
     try {
-      await axios.delete(`http://localhost:4000/api/flashcards/${id}`);
-      setCards(cards.filter((c) => c._id !== id));
+      await axios.delete(`${API_BASE}/flashcards/${id}`);
+      setCards((prev) => prev.filter((c) => c._id !== id));
       setStudied((prev) => {
         const updated = new Set(prev);
         updated.delete(id);
         return updated;
       });
-    } catch {
+    } catch (err) {
+      console.error(err);
       setError("Failed to delete flashcard.");
     }
   };
@@ -124,16 +129,25 @@ export default function FlashcardsStudy() {
   };
 
   // Shuffle cards
-  const shuffleCards = () => setCards((prev) => [...prev].sort(() => Math.random() - 0.5));
+  const shuffleCards = () =>
+    setCards((prev) => [...prev].sort(() => Math.random() - 0.5));
 
-  const handleModeChange = () => setMode((prev) => (prev === "light" ? "dark" : "light"));
+  const handleModeChange = () =>
+    setMode((prev) => (prev === "light" ? "dark" : "light"));
 
   const studiedCount = studied.size;
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{ p: 4, minHeight: "100vh", background: theme.palette.background.default, position: "relative" }}>
+      <Box
+        sx={{
+          p: 4,
+          minHeight: "100vh",
+          background: theme.palette.background.default,
+          position: "relative",
+        }}
+      >
         <canvas
           id="background-canvas"
           style={{
@@ -146,26 +160,66 @@ export default function FlashcardsStudy() {
             pointerEvents: "none",
           }}
         />
-        <canvas id="confetti-canvas" style={{ position: "fixed", top: 0, left: 0, pointerEvents: "none", zIndex: 1 }} />
+        <canvas
+          id="confetti-canvas"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            pointerEvents: "none",
+            zIndex: 1,
+          }}
+        />
 
         <Box sx={{ position: "relative", zIndex: 2 }}>
           {/* Create new flashcard form */}
-          <Card sx={{ mb: 4, p: 2, background: theme.palette.background.paper, color: theme.palette.text.primary }}>
+          <Card
+            sx={{
+              mb: 4,
+              p: 2,
+              background: theme.palette.background.paper,
+              color: theme.palette.text.primary,
+            }}
+          >
             <CardContent>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={4}>
-                  <TextField fullWidth label="Front" name="front" value={newCard.front} onChange={handleNewCardChange} />
+                  <TextField
+                    fullWidth
+                    label="Front"
+                    name="front"
+                    value={newCard.front}
+                    onChange={handleNewCardChange}
+                  />
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                  <TextField fullWidth label="Back" name="back" value={newCard.back} onChange={handleNewCardChange} />
+                  <TextField
+                    fullWidth
+                    label="Back"
+                    name="back"
+                    value={newCard.back}
+                    onChange={handleNewCardChange}
+                  />
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                  <TextField fullWidth label="Topic" name="topic" value={newCard.topic} onChange={handleNewCardChange} />
+                  <TextField
+                    fullWidth
+                    label="Topic"
+                    name="topic"
+                    value={newCard.topic}
+                    onChange={handleNewCardChange}
+                  />
                 </Grid>
                 <Grid item xs={12}>
                   <Button
                     variant="contained"
-                    startIcon={saving ? <CircularProgress size={18} color="inherit" /> : <Plus size={18} />}
+                    startIcon={
+                      saving ? (
+                        <CircularProgress size={18} color="inherit" />
+                      ) : (
+                        <Plus size={18} />
+                      )
+                    }
                     onClick={addCard}
                     disabled={saving || !newCard.front || !newCard.back}
                   >
@@ -176,23 +230,44 @@ export default function FlashcardsStudy() {
             </CardContent>
           </Card>
 
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
           {loading && <LinearProgress sx={{ mb: 2 }} />}
 
           {/* Progress bar */}
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{ mb: 3 }}
+          >
             <Typography variant="h6">
               📚 Studied: {studiedCount} / {cards.length}
             </Typography>
             <Box sx={{ flexGrow: 1, mx: 2 }}>
-              <LinearProgress variant="determinate" value={cards.length ? (studiedCount / cards.length) * 100 : 0} sx={{ height: 8, borderRadius: 5 }} />
+              <LinearProgress
+                variant="determinate"
+                value={
+                  cards.length ? (studiedCount / cards.length) * 100 : 0
+                }
+                sx={{ height: 8, borderRadius: 5 }}
+              />
             </Box>
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <Button variant="outlined" startIcon={<Shuffle size={18} />} onClick={shuffleCards}>
+              <Button
+                variant="outlined"
+                startIcon={<Shuffle size={18} />}
+                onClick={shuffleCards}
+              >
                 Shuffle
               </Button>
               <FormControlLabel
-                control={<Switch checked={mode === "dark"} onChange={handleModeChange} />}
+                control={
+                  <Switch checked={mode === "dark"} onChange={handleModeChange} />
+                }
                 label={mode === "dark" ? <Moon size={20} /> : <Sun size={20} />}
               />
             </Box>
@@ -203,22 +278,31 @@ export default function FlashcardsStudy() {
             <Grid container spacing={3}>
               {cards.length === 0 && !loading && !error ? (
                 <Grid item xs={12}>
-                  <Typography variant="h5" align="center" color="text.secondary">
+                  <Typography
+                    variant="h5"
+                    align="center"
+                    color="text.secondary"
+                  >
                     No flashcards yet! Create one above.
                   </Typography>
                 </Grid>
               ) : (
                 cards.map((card, index) => {
-                  const palette = mode === "light" ? lightColors : darkColors;
+                  const palette =
+                    mode === "light" ? lightColors : darkColors;
                   return (
                     <Grid item xs={12} sm={6} md={4} key={card._id}>
                       <CardActionArea
                         component="div"
-                        className={`sticky-card ${flipped[card._id] ? "flipped" : ""}`}
+                        className={`sticky-card ${
+                          flipped[card._id] ? "flipped" : ""
+                        }`}
                         onClick={() => handleFlip(card._id)}
                         style={{
                           background: palette[index % palette.length],
-                          transform: `rotate(${index % 2 === 0 ? -3 : 3}deg)`,
+                          transform: `rotate(${
+                            index % 2 === 0 ? -3 : 3
+                          }deg)`,
                         }}
                       >
                         <div className="sticky-inner">
@@ -228,8 +312,19 @@ export default function FlashcardsStudy() {
                             </Typography>
                           </div>
                           <div className="sticky-back">
-                            <Typography align="center">{card.back}</Typography>
-                            {card.topic && <Chip label={card.topic} size="small" sx={{ mt: 1, bgcolor: "rgba(0,0,0,0.1)" }} />}
+                            <Typography align="center">
+                              {card.back}
+                            </Typography>
+                            {card.topic && (
+                              <Chip
+                                label={card.topic}
+                                size="small"
+                                sx={{
+                                  mt: 1,
+                                  bgcolor: "rgba(0,0,0,0.1)",
+                                }}
+                              />
+                            )}
                             <IconButton
                               color="error"
                               size="small"
@@ -237,7 +332,11 @@ export default function FlashcardsStudy() {
                                 e.stopPropagation();
                                 deleteCard(card._id);
                               }}
-                              sx={{ position: "absolute", bottom: 8, right: 8 }}
+                              sx={{
+                                position: "absolute",
+                                bottom: 8,
+                                right: 8,
+                              }}
                             >
                               <Trash2 size={18} />
                             </IconButton>
@@ -251,7 +350,6 @@ export default function FlashcardsStudy() {
             </Grid>
           </Box>
 
-          {/* Card styles */}
           <style>{`
             .sticky-card {
               width: 220px;
