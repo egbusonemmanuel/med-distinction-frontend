@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Paper,
@@ -15,10 +15,13 @@ import { Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "../supabaseClient";
 
-// Floating DNA & Water Animations
+// 🌌 Floating DNA & Water Animations
 const FloatingParticles = () => {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
+  const width = typeof window !== "undefined" ? window.innerWidth : 1200;
+  const height = typeof window !== "undefined" ? window.innerHeight : 800;
+
+  const dnaParticles = useMemo(() => Array.from({ length: 15 }), []);
+  const waterParticles = useMemo(() => Array.from({ length: 15 }), []);
 
   return (
     <Box
@@ -33,9 +36,9 @@ const FloatingParticles = () => {
         background: "linear-gradient(135deg, #0f0c29, #302b63, #24243e)",
       }}
     >
-      {Array.from({ length: 15 }).map((_, i) => (
+      {dnaParticles.map((_, i) => (
         <motion.div
-          key={"dna" + i}
+          key={`dna-${i}`}
           initial={{ x: Math.random() * width, y: -100, opacity: 0 }}
           animate={{
             y: height + 100,
@@ -58,14 +61,12 @@ const FloatingParticles = () => {
           🧬
         </motion.div>
       ))}
-      {Array.from({ length: 15 }).map((_, i) => (
+
+      {waterParticles.map((_, i) => (
         <motion.div
-          key={"water" + i}
+          key={`water-${i}`}
           initial={{ x: Math.random() * width, y: -50, opacity: 0 }}
-          animate={{
-            y: height + 50,
-            opacity: [0, 0.5, 0],
-          }}
+          animate={{ y: height + 50, opacity: [0, 0.5, 0] }}
           transition={{
             duration: Math.random() * 10 + 5,
             repeat: Infinity,
@@ -75,7 +76,7 @@ const FloatingParticles = () => {
           style={{
             position: "absolute",
             fontSize: Math.random() * 40 + 20,
-            color: "rgba(34, 255, 222,0.3)",
+            color: "rgba(34,255,222,0.3)",
             filter: "blur(2px)",
           }}
         >
@@ -96,14 +97,22 @@ export default function AuthPage() {
   const togglePassword = () => setShowPassword((prev) => !prev);
 
   const handleEmailLogin = async () => {
+    if (!email || !password) {
+      setMessage({ open: true, text: "Please fill in both fields.", severity: "warning" });
+      return;
+    }
+
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
+
     if (error) {
       setMessage({ open: true, text: error.message, severity: "error" });
     } else {
       setMessage({ open: true, text: "Login successful!", severity: "success" });
-      window.location.href = "/dashboard"; // optional redirect after login
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 1000);
     }
   };
 
@@ -112,10 +121,11 @@ export default function AuthPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin, // ✅ auto-detects your current domain
+        redirectTo: `${window.location.origin}/dashboard`,
       },
     });
     setLoading(false);
+
     if (error) {
       setMessage({ open: true, text: error.message, severity: "error" });
     }
@@ -224,9 +234,7 @@ export default function AuthPage() {
                 py: 1.5,
                 fontWeight: "bold",
                 background: "rgba(255,255,255,0.05)",
-                "&:hover": {
-                  background: "rgba(34,163,255,0.2)",
-                },
+                "&:hover": { background: "rgba(34,163,255,0.2)" },
               }}
               onClick={handleGoogleLogin}
             >

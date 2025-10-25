@@ -5,6 +5,7 @@ import { useSession } from "@supabase/auth-helpers-react";
 // Pages
 import Landing from "./pages/Landing.jsx";
 import Auth from "./pages/Auth.jsx";
+import AuthCallback from "./pages/AuthCallback.jsx"; // ✅ NEW
 import Dashboard from "./components/Dashboard.jsx";
 import Library from "./pages/Library.jsx";
 import Flashcards from "./pages/Flashcards.jsx";
@@ -14,30 +15,34 @@ import Subscriptions from "./pages/Subscriptions.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
 import AdminPanel from "./pages/AdminPanel.jsx";
 
-// 🔐 Private route wrapper
+// ============================
+// 🔐 PRIVATE ROUTE WRAPPERS
+// ============================
+
+// 🔒 Only logged-in users can access
 function PrivateRoute({ children }) {
   const session = useSession();
   const currentUser = session?.user ?? null;
   return currentUser ? children : <Navigate to="/auth" replace />;
 }
 
-// 🔒 Paid/Admin content wrapper
+// 💎 Paid or Admin-only routes
 function ProtectedContent({ children }) {
   const session = useSession();
   const currentUser = session?.user ?? null;
-
-  // You can store isAdmin/isPaid in user_metadata when signing up
   const isAdmin = currentUser?.user_metadata?.isAdmin ?? false;
   const isPaid = currentUser?.user_metadata?.isPaid ?? false;
 
-  return isAdmin || isPaid ? children : (
+  return isAdmin || isPaid ? (
+    children
+  ) : (
     <div className="p-6 text-center text-gray-600">
-      🔒 This feature is locked. Please subscribe.
+      🔒 This feature is locked. Please subscribe to gain access.
     </div>
   );
 }
 
-// 🧠 Admin route wrapper
+// 🧠 Admin-only routes
 function AdminRoute({ children }) {
   const session = useSession();
   const currentUser = session?.user ?? null;
@@ -47,19 +52,25 @@ function AdminRoute({ children }) {
   return isAdmin ? children : <Navigate to="/dashboard" replace />;
 }
 
+// ============================
+// 🚀 MAIN APP
+// ============================
+
 function App() {
   const session = useSession();
   const currentUser = session?.user ?? null;
 
   return (
     <Routes>
-      {/* Redirect logged-in users from landing to dashboard */}
+      {/* 🏠 Landing Page */}
       <Route
         path="/"
         element={
           currentUser ? <Navigate to="/dashboard" replace /> : <Landing />
         }
       />
+
+      {/* 🔑 Auth Page */}
       <Route
         path="/auth"
         element={
@@ -67,7 +78,13 @@ function App() {
         }
       />
 
-      {/* Private routes */}
+      {/* ✅ OAuth Callback (handles Google redirect) */}
+      <Route path="/auth/callback" element={<AuthCallback />} />
+
+      {/* ============================ */}
+      {/* 👤 PRIVATE ROUTES */}
+      {/* ============================ */}
+
       <Route
         path="/dashboard"
         element={
@@ -76,6 +93,7 @@ function App() {
           </PrivateRoute>
         }
       />
+
       <Route
         path="/flashcards"
         element={
@@ -84,6 +102,7 @@ function App() {
           </PrivateRoute>
         }
       />
+
       <Route
         path="/quizzes"
         element={
@@ -93,7 +112,10 @@ function App() {
         }
       />
 
-      {/* Paid/Admin only */}
+      {/* ============================ */}
+      {/* 💎 PAID / ADMIN ROUTES */}
+      {/* ============================ */}
+
       <Route
         path="/library"
         element={
@@ -104,6 +126,7 @@ function App() {
           </PrivateRoute>
         }
       />
+
       <Route
         path="/courses"
         element={
@@ -114,6 +137,7 @@ function App() {
           </PrivateRoute>
         }
       />
+
       <Route
         path="/subscriptions"
         element={
@@ -125,7 +149,10 @@ function App() {
         }
       />
 
-      {/* Admin routes */}
+      {/* ============================ */}
+      {/* 🧠 ADMIN ROUTES */}
+      {/* ============================ */}
+
       <Route
         path="/admin"
         element={
@@ -134,6 +161,7 @@ function App() {
           </AdminRoute>
         }
       />
+
       <Route
         path="/admin-page"
         element={
@@ -143,7 +171,9 @@ function App() {
         }
       />
 
-      {/* Catch-all fallback */}
+      {/* ============================ */}
+      {/* ⚠️ CATCH-ALL ROUTE */}
+      {/* ============================ */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
